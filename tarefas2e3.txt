@@ -24,3 +24,10 @@ Tarefa 3:
         OBS.: O único registro que vai ter o dado correto é o cliente KL GAMA, que são os dados da empresa aqui.
 
     Resumo: 
+
+
+----------------------------------------------------------
+
+TAREFA:
+
+    - Rodar o passo a passo que está em passo-a-passo-base-local-e-anonimizacao.md
