@@ -1,0 +1,34 @@
+Sobre fazer em Node ou SQL puro o script.
+
+Sim, para execução final no banco, um SQL puro costuma ser melhor.
+
+Vantagens do SQL puro:
+- roda direto no PostgreSQL, sem depender de Node;
+- fica mais fácil versionar e revisar como script de banco;
+- pode ser executado no cliente SQL que você já usa;
+- elimina dependência de ambiente local e de conexão via script JS.
+
+Mas há uma limitação relevante: o que você pediu combina bem mais com um gerador do que com um SQL estático.
+
+Os pontos difíceis em SQL puro são:
+- inspecionar todas as tabelas/colunas dinamicamente;
+- calcular amostra de até 20 valores por coluna;
+- decidir estratégia por tipo SQL e também por nome da coluna;
+- gerar tratamento flexível e opcional para `json/jsonb`;
+- montar tudo isso de forma legível e fácil de manter.
+
+Então a divisão mais pragmática é esta:
+- `Node` para gerar;
+- `SQL` como artefato final para executar.
+
+Ou seja:
+- o JS descobre e monta;
+- o resultado é um `.sql` puro;
+- você roda o `.sql` no banco copiado.
+
+Se a sua pergunta for “dá para fazer 100% em SQL puro?”, a resposta é sim, mas fica mais trabalhoso, mais verboso e geralmente pior de manter, a não ser que você queira uma stored procedure PL/pgSQL bem grande.
+
+Minha recomendação (IA):
+- manter esse script `zero-*` como gerador;
+- usar o SQL gerado como artefato de execução;
+- só migrar para SQL puro total se você realmente quiser centralizar tudo no banco.

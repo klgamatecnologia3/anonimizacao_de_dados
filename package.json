@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "generate-db-docs": "node generate-db-docs-dashed-pk.js"
+    "generate-db-docs": "node generate-db-docs-dashed-pk.js",
+    "generate-anonymization-sql": "node scripts/generate-anonymization-sql.js",
+    "generate-anonymization-sql-all-types": "node scripts/generate-anonymization-sql-all-types.js",
+    "zero-generate-full-anonymization-sql": "node scripts/zero-generate-full-anonymization-sql.js"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
