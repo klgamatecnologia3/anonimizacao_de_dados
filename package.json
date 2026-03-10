@@ -1,0 +1,12 @@
+{
+  "name": "anonimizacao_de_dados",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "generate-db-docs": "node generate-db-docs-dashed-pk.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3"
+  }
+}

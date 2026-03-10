@@ -1,0 +1,10 @@
+.env
+.env.script
+
+# Ignore node_modules
+node_modules/
+
+# Documentação gerada não concluída
+docs/
+
+generate-db-docs-dashed-pk.js

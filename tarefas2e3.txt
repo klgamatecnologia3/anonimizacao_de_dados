@@ -1,0 +1,26 @@
+Boa tarde, 
+
+Gustavo, por gentileza após a conclusão destas atividades (os scripts .yaml, .json e .md), fazer na sequência estas abaixo: 
+
+Tarefa 2:
+
+    Adicione no seu script de geração do arquivo .MD e demais:
+        Em outra pasta, a construção da base dados, resumindo o próprio DDL, mas sem considerar os campos que estão minúsculos em tabelas que tenham campos maiúsculos, pois os campos maiúsculos são os que são usados hoje estes minúsculos não são gravados mais dados. 
+        Para as tabelas que estão com o nome da tabela em maiúsculo e os campos minúsculos, só dar um uppercase nome dos campos, lembrar que o postgres tem aquela regra de aspas duplas em campos assim, vide outros tabelas para entender. 
+        Para as tabelas que estão todas minúsculas, transformar em maiúsculo tudo desde campos até o nome da tabela. 
+        Aproveita para revisar as views que estão minúsculas para migrar para o novo padrão de maiúsculas.
+
+    Resumo: Colocar em UPPERCASE todos os NOMES DE TABELA, NOMES DE CAMPOS e do VIEWS [Foi conversado e deverá ser feito depois, para não prejudicar potencialmente na identificação das constraints que deveriam ser, mas ainda não são]
+
+Tarefa 3:
+
+    Quero que construa outro script separado desse, mas vai conectar na base de dados para fazer uma normalização [foi conversado e ele quiss dizer anonimização] dos dados do ambiente de homologação em relação [conformidade com] a LGPD:
+        Gostaria que você montasse um breve documento, algo bem simples mesmo. Apenas listando os riscos existentes quanto a LGPD e quais principais dados estão inclusos nele.
+        O script deve atualizar todos os dados sensíveis, como CPF/CNPJ para genéricos, verificar em outras tabelas se há informações sensíveis, anexos, se necessário te mostro exemplos.
+        Por exemplo, o nome do cliente pode ser CLIENTE + ID dele. 
+        Usuários, se os e-mails usados são e-mails falsos (genéricos), exceto os nossos para acesso. E também manter o do time interno para caso eles precisem validar algo.
+        Você tem a liberdade de analisar quaisquer informações e o que achar necessário pode alterar sem problemas.
+        Em relação aos anexos, temos um anexo padrão de modelo, depois te mostro qual usar.
+        OBS.: O único registro que vai ter o dado correto é o cliente KL GAMA, que são os dados da empresa aqui.
+
+    Resumo: 
