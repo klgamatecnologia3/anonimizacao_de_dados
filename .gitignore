@@ -8,3 +8,6 @@ node_modules/
 docs/
 
 generate-db-docs-dashed-pk.js
+
+# Arquivos de dump do banco de dados
+*.dump
