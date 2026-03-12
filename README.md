@@ -49,6 +49,53 @@ DB_SCHEMA=public
 
 Voce tambem pode usar `DATABASE_URL` em vez das variaveis separadas.
 
+## Como fazer o dump da base antes de anonimizar
+
+O fluxo recomendado e trabalhar sobre uma copia local da base, nunca direto na origem.
+
+Exemplo com `pg_dump` para gerar um backup no formato custom:
+
+```bash
+pg_dump \
+  --host=SEU_HOST \
+  --port=5432 \
+  --username=postgres \
+  --dbname=postgres \
+  --format=custom \
+  --no-owner \
+  --no-privileges \
+  --file=backup_base.dump
+```
+
+Quando o `pg_dump` pedir senha, use a senha do banco de origem que esta sofrendo o dump.
+
+Depois, restaure esse backup em uma base local, por exemplo `anon_teste`:
+
+```bash
+pg_restore \
+  --host=localhost \
+  --port=5432 \
+  --username=postgres \
+  --dbname=anon_teste \
+  --clean \
+  --if-exists \
+  --no-owner \
+  --no-privileges \
+  backup_base.dump
+```
+
+Quando o `pg_restore` pedir senha, use a senha do PostgreSQL local, isto e, da base onde o backup sera restaurado.
+
+Fluxo resumido:
+
+1. gerar o dump da base de origem com `pg_dump`;
+2. restaurar localmente com `pg_restore`;
+3. apontar o `.env.script` para a base local;
+4. gerar e revisar o SQL de anonimização;
+5. executar a anonimização na copia local.
+
+O guia completo desse processo esta em [docs/passo-a-passo-base-local-e-anonimizacao.md](/c:/projetos/anonimizacao_de_dados/docs/passo-a-passo-base-local-e-anonimizacao.md).
+
 ## Importante antes de gerar o SQL
 
 Hoje o arquivo [scripts/zero-generate-full-anonymization-sql.js](/c:/projetos/anonimizacao_de_dados/scripts/zero-generate-full-anonymization-sql.js) esta com a constante `EXECUTE_DIRECTLY_IN_DATABASE = true`.
