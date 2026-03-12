@@ -3,6 +3,7 @@
 // - preserva somente public.clientes.id = 1;
 // - não altera IDs nem colunas booleanas;
 // - preserva datas em geral e anonimiza datas pessoais evidentes, como nascimento;
+// - define colunas jsonb[] (udt_name = _jsonb) como NULL quando permitido;
 // - decide primeiro pelo tipo SQL e refina por nome quando o tipo é genérico;
 // - usa amostra de até 20 valores por coluna para estimar comprimento médio;
 // - gera um arquivo SQL executável com UPDATEs por tabela.
@@ -25,7 +26,7 @@ const ENABLE_JSON_ANONYMIZATION = true;
 // false = apenas gera o arquivo SQL em disco para você executar depois.
 // true = executa diretamente no banco e não gera o arquivo SQL.
 // Mantenha false enquanto estiver validando a estratégia de anonimização.
-const EXECUTE_DIRECTLY_IN_DATABASE = false;
+const EXECUTE_DIRECTLY_IN_DATABASE = true;
 
 function parseBoolean(value, fallback) {
   if (value === undefined) return fallback;
@@ -76,6 +77,10 @@ function normalizedType(meta) {
   return String(meta.data_type || '').toLowerCase();
 }
 
+function normalizedUdtName(meta) {
+  return String(meta.udt_name || '').toLowerCase();
+}
+
 function charLength(meta) {
   const value = Number(meta.character_maximum_length || 0);
   return value > 0 ? value : null;
@@ -109,12 +114,12 @@ function withCast(expression, meta) {
 
 function repeatText(seed, length, meta) {
   const literal = quoteLiteral(seed);
-  const safeLength = Math.max(length, seed.length);
+  const safeLength = Math.max(length, 1);
   return withCast(`left(repeat(${literal}, ceil(${safeLength}::numeric / length(${literal}))::int), ${safeLength})`, meta);
 }
 
 function prefixedSequence(prefix, length, meta) {
-  const safeLength = Math.max(length, prefix.length + 4);
+  const safeLength = Math.max(length, 1);
   const prefixLiteral = quoteLiteral(prefix);
   return withCast(
     `left(${prefixLiteral} || lpad(src.anon_seq::text, greatest(${safeLength} - length(${prefixLiteral}), 1), '0'), ${safeLength})`,
@@ -123,13 +128,13 @@ function prefixedSequence(prefix, length, meta) {
 }
 
 function emailExpression(meta) {
-  return withCast(`left('alfredo.' || src.anon_seq::text || '@example.com', ${targetTextLength(meta, 18, 32)})`, meta);
+  return withCast(`left('anon.' || src.anon_seq::text || '@example.com', ${targetTextLength(meta, 18, 32)})`, meta);
 }
 
 function digitExpression(length, meta, multiplier = 1111111) {
   const safeLength = Math.max(length, 4);
   return withCast(
-    `left(lpad(((src.anon_seq * ${multiplier})::bigint)::text, ${safeLength}, substr('1234567890', (src.anon_seq % 10) + 1, 1)), ${safeLength})`,
+    `left(lpad(((src.anon_seq * ${multiplier})::bigint)::text, ${safeLength}, substr('1234567890', (((src.anon_seq % 10) + 1)::int), 1)), ${safeLength})`,
     meta,
   );
 }
@@ -209,6 +214,11 @@ function jsonExpression(meta) {
   return `${quoteLiteral(JSON.stringify(payload))}::${normalizedType(meta)}`;
 }
 
+function jsonArrayExpression(meta) {
+  if (meta.is_nullable === 'YES') return 'NULL';
+  return `'{}'::jsonb[]`;
+}
+
 function personalDateExpression(meta) {
   const type = normalizedType(meta);
   if (type === 'date') {
@@ -263,9 +273,12 @@ function classifyTextByName(meta) {
 function resolveStrategy(meta) {
   const name = normalizeName(meta.column_name);
   const type = normalizedType(meta);
+  const udtName = normalizedUdtName(meta);
+  const constraintTypes = meta.constraint_types || [];
 
   if (name === 'id' || name.startsWith('id')) return null;
   if (type === 'boolean') return null;
+  if (constraintTypes.length > 0) return null;
 
   if (type === 'date' || type.includes('timestamp')) {
     if (name.includes('nasc')) {
@@ -281,6 +294,11 @@ function resolveStrategy(meta) {
   if (type === 'json' || type === 'jsonb') {
     if (!ENABLE_JSON_ANONYMIZATION) return null;
     return { category: 'json', expression: jsonExpression(meta) };
+  }
+
+  if (udtName === '_jsonb') {
+    if (!ENABLE_JSON_ANONYMIZATION) return null;
+    return { category: 'jsonb_array', expression: jsonArrayExpression(meta) };
   }
 
   if (type === 'bytea') {
@@ -362,6 +380,31 @@ async function getSampleStats(client, tableName, columnName) {
   return rows[0];
 }
 
+async function getColumnConstraints(client, tableName) {
+  const query = `
+    select
+      a.attname as column_name,
+      array_agg(distinct c.contype order by c.contype) as constraint_types
+    from pg_constraint c
+    join pg_class t
+      on t.oid = c.conrelid
+    join pg_namespace n
+      on n.oid = t.relnamespace
+    join unnest(c.conkey) as constrained_column(attnum)
+      on true
+    join pg_attribute a
+      on a.attrelid = t.oid
+     and a.attnum = constrained_column.attnum
+    where n.nspname = $1
+      and t.relname = $2
+      and c.contype in ('p', 'f', 'u', 'c', 'x')
+    group by a.attname;
+  `;
+
+  const { rows } = await client.query(query, [TARGET_SCHEMA, tableName]);
+  return new Map(rows.map((row) => [row.column_name, row.constraint_types || []]));
+}
+
 function buildUpdateSql(tableName, columns) {
   const assignments = columns
     .map((column) => `      ${quoteIdentifier(column.column_name)} = ${column.strategy.expression}`)
@@ -397,6 +440,7 @@ function buildHeader(summary) {
     '-- - preserva apenas public.clientes.id = 1;',
     '-- - não altera IDs e colunas booleanas;',
     '-- - preserva datas em geral e anonimiza datas pessoais evidentes;',
+    '-- - define colunas jsonb[] (udt_name = _jsonb) como NULL quando permitido;',
     '-- - decide primeiro pelo tipo SQL e depois pelo nome da coluna;',
     '-- - usa média amostral de até 20 linhas por coluna.',
     '',
@@ -419,12 +463,14 @@ async function main() {
 
     for (const tableName of tables) {
       const columns = await getColumns(client, tableName);
+      const constrainedColumns = await getColumnConstraints(client, tableName);
       const planned = [];
 
       for (const column of columns) {
         const sample = await getSampleStats(client, tableName, column.column_name);
         const meta = {
           ...column,
+          constraint_types: constrainedColumns.get(column.column_name) || [],
           sample_avg_length: sample.avg_length,
           sample_max_length: sample.max_length,
           sample_count: sample.sample_count,
