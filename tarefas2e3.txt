@@ -14,7 +14,7 @@ Tarefa 2:
 
 Tarefa 3:
 
-    Quero que construa outro script separado desse, mas vai conectar na base de dados para fazer uma normalização [foi conversado e ele quiss dizer anonimização] dos dados do ambiente de homologação em relação [conformidade com] a LGPD:
+    Quero que construa outro script separado desse, mas vai conectar na base de dados para fazer uma normalização [foi conversado e ele quis dizer anonimização] dos dados do ambiente de homologação em relação [conformidade com] a LGPD:
         Gostaria que você montasse um breve documento, algo bem simples mesmo. Apenas listando os riscos existentes quanto a LGPD e quais principais dados estão inclusos nele.
         O script deve atualizar todos os dados sensíveis, como CPF/CNPJ para genéricos, verificar em outras tabelas se há informações sensíveis, anexos, se necessário te mostro exemplos.
         Por exemplo, o nome do cliente pode ser CLIENTE + ID dele. 
